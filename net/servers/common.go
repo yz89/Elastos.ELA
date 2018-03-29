@@ -140,7 +140,8 @@ type RegisterAssetInfo struct {
 }
 
 type SideMiningInfo struct {
-	SideBlockHash string
+	SideBlockHash   string
+	SideGenesisHash string
 }
 
 type TransferCrossChainAssetInfo struct {
@@ -166,6 +167,7 @@ func TransPayloadToHex(p Payload) PayloadInfo {
 	case *payload.SideMining:
 		obj := new(SideMiningInfo)
 		obj.SideBlockHash = object.SideBlockHash.String()
+		obj.SideGenesisHash = object.SideGenesisHash.String()
 		return obj
 	case *payload.WithdrawToken:
 		obj := new(WithdrawTokenInfo)
