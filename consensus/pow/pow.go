@@ -291,11 +291,11 @@ func (pow *PowService) SolveBlock(MsgBlock *ledger.Block, ticker *time.Ticker) b
 	for i := uint32(0); i <= maxNonce; i++ {
 		select {
 		case <-ticker.C:
-			if MsgBlock.Blockdata.PrevBlockHash.CompareTo(*ledger.DefaultLedger.Blockchain.BestChain.Hash) != 0 {
-				return false
-			}
+			// if MsgBlock.Blockdata.PrevBlockHash.CompareTo(*ledger.DefaultLedger.Blockchain.BestChain.Hash) != 0 {
+			// 	return false
+			// }
 			//UpdateBlockTime(msgBlock, m.server.blockManager)
-
+			return false
 		default:
 			// Non-blocking select to fall through
 		}
@@ -397,7 +397,7 @@ out:
 		default:
 			// Non-blocking select to fall through
 		}
-		log.Trace("<================POW Mining==============>\n")
+		log.Trace("<================Packing Block==============>")
 		//time.Sleep(15 * time.Second)
 
 		msgBlock, err := pow.GenerateBlock(pow.PayToAddr)
@@ -408,6 +408,7 @@ out:
 
 		//begin to mine the block with POW
 		if pow.SolveBlock(msgBlock, ticker) {
+			log.Trace("<================Solved Block==============>")
 			//send the valid block to p2p networkd
 			if msgBlock.Blockdata.Height == ledger.DefaultLedger.Blockchain.GetBestHeight()+1 {
 				inMainChain, isOrphan, err := ledger.DefaultLedger.Blockchain.AddBlock(msgBlock)
