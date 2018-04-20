@@ -1,18 +1,20 @@
 package node
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"sync"
+
 	"Elastos.ELA/common"
 	"Elastos.ELA/common/config"
 	"Elastos.ELA/common/log"
 	"Elastos.ELA/core/ledger"
 	"Elastos.ELA/core/transaction"
 	tx "Elastos.ELA/core/transaction"
+	"Elastos.ELA/core/transaction/payload"
 	. "Elastos.ELA/errors"
 	"Elastos.ELA/events"
-	"bytes"
-	"errors"
-	"fmt"
-	"sync"
 )
 
 var (
@@ -48,6 +50,12 @@ func (this *TXNPool) AppendToTxnPool(txn *transaction.Transaction) ErrCode {
 		log.Info("Transaction verification with ledger failed", txn.Hash())
 		return errCode
 	}
+
+	// remove duplicate sidemining transaction
+	if txn.TxType == tx.SideMining {
+		this.removeDuplicateSideminingTx(txn)
+	}
+
 	//verify transaction by pool with lock
 	if ok := this.verifyTransactionWithTxnPool(txn); !ok {
 		return ErrDoubleSpend
@@ -281,6 +289,26 @@ func (this *TXNPool) RemoveTransaction(txn *tx.Transaction) {
 		txn := this.getInputUTXOList(&input)
 		if txn != nil {
 			this.removeTransaction(txn)
+		}
+	}
+}
+
+func (this *TXNPool) removeDuplicateSideminingTx(txn *tx.Transaction) {
+	for _, v := range this.txnList {
+		if v.TxType == tx.SideMining {
+			oldPayload := v.Payload.Data(payload.SideMiningPayloadVersion)
+			oldGenesisHashData := oldPayload[32:64]
+			oldGenesisHash, _ := common.Uint256ParseFromBytes(oldGenesisHashData)
+
+			newPayload := txn.Payload.Data(payload.SideMiningPayloadVersion)
+			newGenesisHashData := newPayload[32:64]
+			newGenesisHash, _ := common.Uint256ParseFromBytes(newGenesisHashData)
+
+			if oldGenesisHash == newGenesisHash {
+				txid := txn.Hash()
+				log.Info("replace sidemining transaction, txid=", txid.String())
+				this.removeTransaction(v)
+			}
 		}
 	}
 }
