@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/elastos/Elastos.ELA/common/log"
 	"github.com/elastos/Elastos.ELA/core/types"
 	"github.com/elastos/Elastos.ELA/core/types/outputpayload"
 
@@ -49,19 +48,31 @@ func newTxOutput(L *lua.LState) int {
 	}
 
 	var outputPayload types.OutputPayload
-	switch outputPayloadData.Value.(type) {
-	case *outputpayload.DefaultOutput:
+	switch types.OutputType(outputType) {
+	case types.DefaultOutput:
 		payload, ok := outputPayloadData.Value.(*outputpayload.DefaultOutput)
 		if !ok {
-			log.Debug("error default output payload")
+			fmt.Println("error default output payload")
+			os.Exit(1)
 		}
 		outputPayload = payload
-	case *outputpayload.VoteOutput:
+	case types.VoteOutput:
 		payload, ok := outputPayloadData.Value.(*outputpayload.VoteOutput)
 		if !ok {
-			log.Debug("error vote output payload")
+			fmt.Println("error vote output payload")
+			os.Exit(1)
 		}
 		outputPayload = payload
+	case types.RegisterProducerOutput:
+		payload, ok := outputPayloadData.Value.(*outputpayload.RegisterProducer)
+		if !ok {
+			fmt.Println("error register output payload")
+			os.Exit(1)
+		}
+		outputPayload = payload
+	default:
+		fmt.Println("error output payload type")
+		os.Exit(1)
 	}
 
 	output := &types.Output{

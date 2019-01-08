@@ -8,6 +8,7 @@ import (
 	"os"
 
 	clicom "github.com/elastos/Elastos.ELA/cli/common"
+	"github.com/elastos/Elastos.ELA/cli/script/api/client"
 	"github.com/elastos/Elastos.ELA/common"
 	pg "github.com/elastos/Elastos.ELA/core/contract/program"
 	"github.com/elastos/Elastos.ELA/core/types"
@@ -153,7 +154,7 @@ func transactionHash(L *lua.LState) int {
 
 func transactionSign(L *lua.LState) int {
 	txn := checkTransaction(L, 1)
-	client := checkClient(L, 2)
+	client := client.CheckClient(L, 2)
 	//fmt.Println("txn:", txn)
 	//fmt.Println("client:", client)
 

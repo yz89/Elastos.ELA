@@ -36,6 +36,7 @@ func (v *TxVersionMain) CheckOutputPayload(txType types.TransactionType, output 
 		switch output.OutputType {
 		case types.DefaultOutput:
 		case types.VoteOutput:
+		case types.RegisterProducerOutput:
 		default:
 			goto ERRMATCH
 		}

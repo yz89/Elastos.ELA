@@ -44,6 +44,15 @@ type VoteOutputInfo struct {
 	Contents []VoteContentInfo `json:"contents"`
 }
 
+type RegisterProducerOutputInfo struct {
+	PublicKey string `json:"publickey"`
+	NickName  string `json:"nickname"`
+	Url       string `json:"url"`
+	Location  uint64 `json:"location"`
+	Address   string `json:"address"`
+	Signature string `json:"signature"`
+}
+
 type ProgramInfo struct {
 	Code      string `json:"code"`
 	Parameter string `json:"parameter"`

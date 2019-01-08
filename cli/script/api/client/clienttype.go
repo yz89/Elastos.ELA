@@ -1,4 +1,4 @@
-package api
+package client
 
 import (
 	"encoding/hex"
@@ -41,7 +41,7 @@ func newClient(L *lua.LState) int {
 }
 
 // Checks whether the first lua argument is a *LUserData with *Wallet and returns this *Wallet.
-func checkClient(L *lua.LState, idx int) *account.ClientImpl {
+func CheckClient(L *lua.LState, idx int) *account.ClientImpl {
 	ud := L.CheckUserData(idx)
 	if v, ok := ud.Value.(*account.ClientImpl); ok {
 		return v
@@ -59,14 +59,14 @@ var clientMethods = map[string]lua.LGFunction{
 
 // Getter and setter for the Person#Name
 func clientGet(L *lua.LState) int {
-	p := checkClient(L, 1)
+	p := CheckClient(L, 1)
 	fmt.Println(p)
 
 	return 0
 }
 
 func getWalletAddr(L *lua.LState) int {
-	wallet := checkClient(L, 1)
+	wallet := CheckClient(L, 1)
 	acc, _ := wallet.GetDefaultAccount()
 	addr, _ := acc.ProgramHash.ToAddress()
 
@@ -76,7 +76,7 @@ func getWalletAddr(L *lua.LState) int {
 }
 
 func getWalletPubkey(L *lua.LState) int {
-	wallet := checkClient(L, 1)
+	wallet := CheckClient(L, 1)
 	acc, _ := wallet.GetDefaultAccount()
 	pubkey, _ := acc.PublicKey.EncodePoint(true)
 	L.Push(lua.LString(hex.EncodeToString(pubkey)))

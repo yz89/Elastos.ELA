@@ -12,8 +12,9 @@ import (
 type OutputType byte
 
 const (
-	DefaultOutput OutputType = 0x00
-	VoteOutput    OutputType = 0x01
+	DefaultOutput          OutputType = 0x00
+	VoteOutput             OutputType = 0x01
+	RegisterProducerOutput OutputType = 0x02
 )
 
 type OutputPayload interface {
@@ -122,6 +123,8 @@ func getOutputPayload(outputType OutputType) (OutputPayload, error) {
 		op = new(outputpayload.DefaultOutput)
 	case VoteOutput:
 		op = new(outputpayload.VoteOutput)
+	case RegisterProducerOutput:
+		op = new(outputpayload.RegisterProducer)
 	default:
 		return nil, errors.New("invalid transaction output type")
 	}

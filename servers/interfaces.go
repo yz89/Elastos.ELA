@@ -1168,6 +1168,15 @@ func getOutputPayloadInfo(op OutputPayload) OutputPayloadInfo {
 			obj.Contents = append(obj.Contents, contentInfo)
 		}
 		return obj
+	case *outputpayload.RegisterProducer:
+		obj := new(RegisterProducerInfo)
+		obj.PublicKey = common.BytesToHexString(object.PublicKey)
+		obj.NickName = object.NickName
+		obj.Url = object.Url
+		obj.Location = object.Location
+		obj.Address = object.Address
+		obj.Signature = common.BytesToHexString(object.Signature)
+		return obj
 	}
 
 	return nil

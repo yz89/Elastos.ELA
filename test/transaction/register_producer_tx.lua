@@ -13,7 +13,7 @@ print(pubkey)
 local asset_id = m.get_asset_id()
 
 -- amount, fee
-local amount = 5000
+local amount = 0.05
 local fee = 0.001
 
 -- deposit params
@@ -24,24 +24,27 @@ local deposit_url = "ela_test.org"
 local deposit_local = "112211"
 local deposit_host = "127.0.0.1"
 
--- register producer payload: publickey, nickname, url, local, host, wallet
-local rp_payload = registerproducer.new(deposit_publickey, deposit_nick_name, deposit_url, deposit_local, deposit_host, wallet)
-print(rp_payload:get())
+
+-- payload
+local ta = transferasset.new()
 
 -- transaction: version, txType, payloadVersion, payload, locktime
-local tx = transaction.new(9, 0x09, 0, rp_payload, 0)
+local tx = transaction.new(9, 0x02, 0, ta, 0)
 print(tx:get())
 
 -- input: from, amount + fee
 local charge = tx:appendenough(addr, (amount + fee) * 100000000)
 print(charge)
 
--- outputpayload
+-- default outputpayload
 local default_output = defaultoutput.new()
+-- register producer output: publickey, nickname, url, local, host, wallet
+local rp_output = registerproduceroutput.new(deposit_publickey, deposit_nick_name, deposit_url, deposit_local, deposit_host, wallet)
+print(rp_output:get())
 
 -- output: asset_id, value, recipient, output_paload_type, outputpaload
 local charge_output = output.new(asset_id, charge, addr, 0, default_output)
-local amount_output = output.new(asset_id, amount * 100000000, deposit_address, 0, default_output)
+local amount_output = output.new(asset_id, amount * 100000000, deposit_address, 2, rp_output)
 tx:appendtxout(charge_output)
 tx:appendtxout(amount_output)
 -- print(charge_output:get())

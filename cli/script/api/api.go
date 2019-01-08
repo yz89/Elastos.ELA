@@ -11,6 +11,8 @@ import (
 
 	"github.com/elastos/Elastos.ELA/blockchain"
 	clicom "github.com/elastos/Elastos.ELA/cli/common"
+	"github.com/elastos/Elastos.ELA/cli/script/api/client"
+	"github.com/elastos/Elastos.ELA/cli/script/api/outputpayload"
 	"github.com/elastos/Elastos.ELA/common/log"
 	"github.com/elastos/Elastos.ELA/core/types"
 	log2 "github.com/elastos/Elastos.ELA/dpos/log"
@@ -126,7 +128,6 @@ func getUTXO(L *lua.LState) int {
 
 	ud := L.NewUserData()
 	ud.Value = availabelUtxos
-	L.SetMetatable(ud, L.GetTypeMetatable(luaClientTypeName))
 	L.Push(ud)
 
 	return 1
@@ -182,7 +183,7 @@ func walkDir(dirPth, suffix string) (files []string, err error) {
 }
 
 func RegisterDataType(L *lua.LState) int {
-	RegisterClientType(L)
+	client.RegisterClientType(L)
 	RegisterAttributeType(L)
 	RegisterInputType(L)
 	RegisterOutputType(L)
@@ -209,6 +210,8 @@ func RegisterDataType(L *lua.LState) int {
 	RegisterIllegalVotesType(L)
 	RegisterIllegalBlocksType(L)
 	RegisterStringsType(L)
+
+	outputpayload.RegisterRegisterProducerOutputType(L)
 
 	return 0
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/elastos/Elastos.ELA/cli/script/api/client"
 	"github.com/elastos/Elastos.ELA/common"
 	"github.com/elastos/Elastos.ELA/core/types/payload"
 	"github.com/elastos/Elastos.ELA/crypto"
@@ -127,7 +128,7 @@ func newUpdateProducer(L *lua.LState) int {
 	url := L.ToString(3)
 	location := L.ToInt64(4)
 	address := L.ToString(5)
-	client := checkClient(L, 6)
+	client := client.CheckClient(L, 6)
 
 	publicKey, err := common.HexStringToBytes(publicKeyStr)
 	if err != nil {
@@ -206,7 +207,7 @@ func newRegisterProducer(L *lua.LState) int {
 	url := L.ToString(3)
 	location := L.ToInt64(4)
 	address := L.ToString(5)
-	client := checkClient(L, 6)
+	client := client.CheckClient(L, 6)
 
 	publicKey, err := common.HexStringToBytes(publicKeyStr)
 	if err != nil {
@@ -282,7 +283,7 @@ func RegisterCancelProducerType(L *lua.LState) {
 // Constructor
 func newCancelProducer(L *lua.LState) int {
 	publicKeyStr := L.ToString(1)
-	client := checkClient(L, 2)
+	client := client.CheckClient(L, 2)
 
 	publicKey, err := common.HexStringToBytes(publicKeyStr)
 	if err != nil {
