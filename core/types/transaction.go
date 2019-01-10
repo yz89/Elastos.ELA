@@ -326,10 +326,6 @@ func (tx *Transaction) IsIllegalBlockTx() bool {
 	return tx.TxType == IllegalBlockEvidence
 }
 
-func (tx *Transaction) IsUpdateProducerTx() bool {
-	return tx.TxType == UpdateProducer
-}
-
 func (tx *Transaction) IsReturnDepositCoin() bool {
 	return tx.TxType == ReturnDepositCoin
 }

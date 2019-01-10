@@ -228,6 +228,12 @@ func (pool *TxPool) verifyTransactionWithTxnPool(txn *Transaction) ErrCode {
 				return ErrInvalidOutputPayload
 			}
 			publicKey = payload.PublicKey
+		case UpdateProducerOutput:
+			payload, ok := output.OutputPayload.(*outputpayload.UpdateProducer)
+			if !ok {
+				return ErrInvalidOutputPayload
+			}
+			publicKey = payload.PublicKey
 		}
 
 		if err := pool.verifyDuplicateProducer(BytesToHexString(publicKey)); err != nil {
@@ -236,16 +242,7 @@ func (pool *TxPool) verifyTransactionWithTxnPool(txn *Transaction) ErrCode {
 		}
 	}
 
-	if txn.IsUpdateProducerTx() {
-		payload, ok := txn.Payload.(*PayloadUpdateProducer)
-		if !ok {
-			log.Error("update producer payload cast failed, tx:", txn.Hash())
-		}
-		if err := pool.verifyDuplicateProducer(BytesToHexString(payload.PublicKey)); err != nil {
-			log.Warn(err)
-			return ErrProducerProcessing
-		}
-	} else if txn.IsCancelProducerTx() {
+	if txn.IsCancelProducerTx() {
 		payload, ok := txn.Payload.(*PayloadCancelProducer)
 		if !ok {
 			log.Error("cancel producer payload cast failed, tx:", txn.Hash())

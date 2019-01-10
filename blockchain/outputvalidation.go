@@ -31,6 +31,10 @@ func CheckOutputPayloadSanity(o *types.Output) error {
 		return CheckOutputVoteSanity(o)
 	case types.RegisterProducerOutput:
 		return CheckOutputRegisterProducerSanity(o)
+	case types.UpdateProducerOutput:
+		return CheckOutputUpdateProducerSanity(o)
+	case types.CancelProducerOutput:
+	case types.ReturnProducerOutput:
 	default:
 		return errors.New("invalid output type")
 	}
@@ -48,6 +52,10 @@ func CheckOutputPayloadContext(o *types.Output) error {
 		return CheckOutputVoteContext(o)
 	case types.RegisterProducerOutput:
 		return CheckOutputRegisterProducerContext(o)
+	case types.UpdateProducerOutput:
+		return CheckOutputUpdateProducerContext(o)
+	case types.CancelProducerOutput:
+	case types.ReturnProducerOutput:
 	default:
 		return errors.New("invalid output type")
 	}
@@ -166,6 +174,99 @@ func CheckOutputRegisterProducerContext(o *types.Output) error {
 			return errors.New("duplicated nick name")
 		}
 	}
+
+	return nil
+}
+
+// check update producer payload
+func CheckOutputUpdateProducerSanity(o *types.Output) error {
+	payload, ok := o.OutputPayload.(*outputpayload.UpdateProducer)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// check nick name
+	if err := checkStringField(payload.NickName, "NickName"); err != nil {
+		return err
+	}
+
+	// check url
+	if err := checkStringField(payload.Url, "Url"); err != nil {
+		return err
+	}
+
+	// check ip
+	if err := checkStringField(payload.Address, "Ip"); err != nil {
+		return err
+	}
+
+	// check signature
+	publicKey, err := crypto.DecodePoint(payload.PublicKey)
+	if err != nil {
+		return errors.New("invalid public key in payload")
+	}
+	signedBuf := new(bytes.Buffer)
+	err = payload.SerializeUnsigned(signedBuf)
+	if err != nil {
+		return err
+	}
+	err = crypto.Verify(*publicKey, signedBuf.Bytes(), payload.Signature)
+	if err != nil {
+		return errors.New("invalid signature in payload")
+	}
+
+	return nil
+}
+
+func CheckOutputUpdateProducerContext(o *types.Output) error {
+	payload, ok := o.OutputPayload.(*outputpayload.UpdateProducer)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// check from database
+	producers := DefaultLedger.Store.GetRegisteredProducers()
+	hasProducer := false
+	keepNickName := false
+	for _, p := range producers {
+		if bytes.Equal(p.PublicKey, payload.PublicKey) {
+			hasProducer = true
+			keepNickName = p.NickName == payload.NickName
+			break
+		}
+	}
+	if !hasProducer {
+		return errors.New("invalid producer")
+	}
+
+	if !keepNickName {
+		for _, p := range producers {
+			if p.NickName == payload.NickName {
+				return errors.New("duplicated nick name")
+			}
+		}
+	}
+	return nil
+}
+
+// check cancel producer payload
+func CheckOutputCancelProducerSanity(o *types.Output) error {
+
+	return nil
+}
+
+func CheckOutputCancelProducerContext(o *types.Output) error {
+
+	return nil
+}
+
+// check return producer payload
+func CheckOutputReturnProducerSanity(o *types.Output) error {
+
+	return nil
+}
+
+func CheckOutputReturnProducerContext(o *types.Output) error {
 
 	return nil
 }

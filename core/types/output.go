@@ -15,6 +15,9 @@ const (
 	DefaultOutput          OutputType = 0x00
 	VoteOutput             OutputType = 0x01
 	RegisterProducerOutput OutputType = 0x02
+	UpdateProducerOutput   OutputType = 0x03
+	CancelProducerOutput   OutputType = 0x04
+	ReturnProducerOutput   OutputType = 0x05
 )
 
 type OutputPayload interface {

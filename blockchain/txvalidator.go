@@ -113,13 +113,6 @@ func CheckTransactionContext(blockHeight uint32, txn *Transaction) ErrCode {
 		}
 	}
 
-	if txn.IsUpdateProducerTx() {
-		if err := CheckUpdateProducerTransaction(txn); err != nil {
-			log.Warn("[CheckUpdateProducerTransaction],", err)
-			return ErrTransactionPayload
-		}
-	}
-
 	if txn.IsReturnDepositCoin() {
 		if err := CheckReturnDepositCoinTransaction(txn); err != nil {
 			log.Warn("[CheckReturnDepositCoinTransaction],", err)
@@ -717,68 +710,6 @@ func CheckCancelProducerTransaction(txn *Transaction) error {
 		}
 	}
 	return errors.New("invalid producer")
-}
-
-func CheckUpdateProducerTransaction(txn *Transaction) error {
-	payload, ok := txn.Payload.(*PayloadUpdateProducer)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// check nick name
-	if err := checkStringField(payload.NickName, "NickName"); err != nil {
-		return err
-	}
-
-	// check url
-	if err := checkStringField(payload.Url, "Url"); err != nil {
-		return err
-	}
-
-	// check ip
-	if err := checkStringField(payload.Address, "Ip"); err != nil {
-		return err
-	}
-
-	// check signature
-	publicKey, err := DecodePoint(payload.PublicKey)
-	if err != nil {
-		return errors.New("invalid public key in payload")
-	}
-	signedBuf := new(bytes.Buffer)
-	err = payload.SerializeUnsigned(signedBuf, PayloadUpdateProducerVersion)
-	if err != nil {
-		return err
-	}
-	err = Verify(*publicKey, signedBuf.Bytes(), payload.Signature)
-	if err != nil {
-		return errors.New("invalid signature in payload")
-	}
-
-	// check from database
-	producers := DefaultLedger.Store.GetRegisteredProducers()
-	hasProducer := false
-	keepNickName := false
-	for _, p := range producers {
-		if bytes.Equal(p.PublicKey, payload.PublicKey) {
-			hasProducer = true
-			keepNickName = p.NickName == payload.NickName
-			break
-		}
-	}
-	if !hasProducer {
-		return errors.New("invalid producer")
-	}
-
-	if !keepNickName {
-		for _, p := range producers {
-			if p.NickName == payload.NickName {
-				return errors.New("duplicated nick name")
-			}
-		}
-	}
-
-	return nil
 }
 
 func CheckReturnDepositCoinTransaction(txn *Transaction) error {
