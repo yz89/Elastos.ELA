@@ -330,10 +330,6 @@ func (tx *Transaction) IsReturnDepositCoin() bool {
 	return tx.TxType == ReturnDepositCoin
 }
 
-func (tx *Transaction) IsCancelProducerTx() bool {
-	return tx.TxType == CancelProducer
-}
-
 func (tx *Transaction) IsRegisterProducerTx() bool {
 	return tx.TxType == RegisterProducer
 }

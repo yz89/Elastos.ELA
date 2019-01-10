@@ -106,13 +106,6 @@ func CheckTransactionContext(blockHeight uint32, txn *Transaction) ErrCode {
 		}
 	}
 
-	if txn.IsCancelProducerTx() {
-		if err := CheckCancelProducerTransaction(txn); err != nil {
-			log.Warn("[CheckCancelProducerTransaction],", err)
-			return ErrTransactionPayload
-		}
-	}
-
 	if txn.IsReturnDepositCoin() {
 		if err := CheckReturnDepositCoinTransaction(txn); err != nil {
 			log.Warn("[CheckReturnDepositCoinTransaction],", err)
@@ -680,36 +673,6 @@ func CheckTransferCrossChainAssetTransaction(txn *Transaction, references map[*I
 		return errors.New("Invalid transaction fee")
 	}
 	return nil
-}
-
-func CheckCancelProducerTransaction(txn *Transaction) error {
-	payload, ok := txn.Payload.(*PayloadCancelProducer)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// check signature
-	publicKey, err := DecodePoint(payload.PublicKey)
-	if err != nil {
-		return errors.New("invalid public key in payload")
-	}
-	signedBuf := new(bytes.Buffer)
-	err = payload.SerializeUnsigned(signedBuf, PayloadCancelProducerVersion)
-	if err != nil {
-		return err
-	}
-	err = Verify(*publicKey, signedBuf.Bytes(), payload.Signature)
-	if err != nil {
-		return errors.New("invalid signature in payload")
-	}
-
-	producers := DefaultLedger.Store.GetRegisteredProducers()
-	for _, p := range producers {
-		if bytes.Equal(p.PublicKey, payload.PublicKey) {
-			return nil
-		}
-	}
-	return errors.New("invalid producer")
 }
 
 func CheckReturnDepositCoinTransaction(txn *Transaction) error {

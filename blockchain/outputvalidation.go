@@ -34,6 +34,7 @@ func CheckOutputPayloadSanity(o *types.Output) error {
 	case types.UpdateProducerOutput:
 		return CheckOutputUpdateProducerSanity(o)
 	case types.CancelProducerOutput:
+		return CheckOutputCancelProducerSanity(o)
 	case types.ReturnProducerOutput:
 	default:
 		return errors.New("invalid output type")
@@ -55,6 +56,7 @@ func CheckOutputPayloadContext(o *types.Output) error {
 	case types.UpdateProducerOutput:
 		return CheckOutputUpdateProducerContext(o)
 	case types.CancelProducerOutput:
+		return CheckOutputCancelProducerContext(o)
 	case types.ReturnProducerOutput:
 	default:
 		return errors.New("invalid output type")
@@ -221,7 +223,7 @@ func CheckOutputUpdateProducerSanity(o *types.Output) error {
 func CheckOutputUpdateProducerContext(o *types.Output) error {
 	payload, ok := o.OutputPayload.(*outputpayload.UpdateProducer)
 	if !ok {
-		return errors.New("invalid payload")
+		return errors.New("invalid update producer payload")
 	}
 
 	// check from database
@@ -251,13 +253,42 @@ func CheckOutputUpdateProducerContext(o *types.Output) error {
 
 // check cancel producer payload
 func CheckOutputCancelProducerSanity(o *types.Output) error {
+	payload, ok := o.OutputPayload.(*outputpayload.CancelProducer)
+	if !ok {
+		return errors.New("invalid cancel producer payload")
+	}
+
+	// check signature
+	publicKey, err := crypto.DecodePoint(payload.PublicKey)
+	if err != nil {
+		return errors.New("invalid public key in payload")
+	}
+	signedBuf := new(bytes.Buffer)
+	err = payload.SerializeUnsigned(signedBuf)
+	if err != nil {
+		return err
+	}
+	err = crypto.Verify(*publicKey, signedBuf.Bytes(), payload.Signature)
+	if err != nil {
+		return errors.New("invalid signature in payload")
+	}
 
 	return nil
 }
 
 func CheckOutputCancelProducerContext(o *types.Output) error {
+	payload, ok := o.OutputPayload.(*outputpayload.CancelProducer)
+	if !ok {
+		return errors.New("invalid cancel producer payload")
+	}
 
-	return nil
+	producers := DefaultLedger.Store.GetRegisteredProducers()
+	for _, p := range producers {
+		if bytes.Equal(p.PublicKey, payload.PublicKey) {
+			return nil
+		}
+	}
+	return errors.New("invalid producer")
 }
 
 // check return producer payload
