@@ -16,14 +16,6 @@ import (
 	. "github.com/elastos/Elastos.ELA/errors"
 )
 
-const (
-	// MinDepositAmount is the minimum deposit as a producer.
-	MinDepositAmount = 5000
-	// DepositLockupBlocks indicates how many blocks need to wait when cancel producer was triggered, and can submit return deposit coin request.
-	DepositLockupBlocks = 2160
-	MaxStringLength     = 100
-)
-
 // CheckTransactionSanity verifys received single transaction
 func CheckTransactionSanity(blockHeight uint32, txn *Transaction) ErrCode {
 	if err := CheckTransactionSize(txn); err != nil {
@@ -36,8 +28,8 @@ func CheckTransactionSanity(blockHeight uint32, txn *Transaction) ErrCode {
 		return ErrInvalidInput
 	}
 
-	if err := CheckTransactionOutput(blockHeight, txn); err != nil {
-		log.Warn("[CheckTransactionOutput],", err)
+	if err := CheckTransactionOutputSanity(blockHeight, txn); err != nil {
+		log.Warn("[CheckTransactionOutputSanity],", err)
 		return ErrInvalidOutput
 	}
 
@@ -114,13 +106,6 @@ func CheckTransactionContext(blockHeight uint32, txn *Transaction) ErrCode {
 		}
 	}
 
-	if txn.IsRegisterProducerTx() {
-		if err := CheckRegisterProducerTransaction(txn); err != nil {
-			log.Warn("[CheckRegisterProducerTransaction],", err)
-			return ErrTransactionPayload
-		}
-	}
-
 	if txn.IsCancelProducerTx() {
 		if err := CheckCancelProducerTransaction(txn); err != nil {
 			log.Warn("[CheckCancelProducerTransaction],", err)
@@ -191,6 +176,10 @@ func CheckTransactionContext(blockHeight uint32, txn *Transaction) ErrCode {
 	if err := CheckTransactionSignature(txn, references); err != nil {
 		log.Warn("[CheckTransactionSignature],", err)
 		return ErrTransactionSignature
+	}
+
+	if err := CheckTransactionOutputContext(txn); err != nil {
+		return ErrInvalidOutput
 	}
 
 	if err := CheckTransactionCoinbaseOutputLock(txn); err != nil {
@@ -305,16 +294,10 @@ func CheckTransactionInput(txn *Transaction) error {
 	return nil
 }
 
-func CheckTransactionOutput(blockHeight uint32, txn *Transaction) error {
+func CheckTransactionOutputSanity(blockHeight uint32, txn *Transaction) error {
 	if len(txn.Outputs) > math.MaxUint16 {
 		return errors.New("output count should not be greater than 65535(MaxUint16)")
 	}
-
-	//for _, output := range txn.Outputs {
-	//	if contract.GetPrefixType(output.ProgramHash) == contract.PrefixDeposit && !txn.IsRegisterProducerTx() {
-	//		return errors.New("only RegisterProducer transaction can use the deposit address")
-	//	}
-	//}
 
 	if txn.IsCoinBaseTx() {
 		if len(txn.Outputs) < 2 {
@@ -356,7 +339,7 @@ func CheckTransactionOutput(blockHeight uint32, txn *Transaction) error {
 	if len(txn.Outputs) < 1 {
 		return errors.New("transaction has no outputs")
 	}
-	// check if output address is valid
+
 	for _, output := range txn.Outputs {
 		if output.AssetID != DefaultLedger.Blockchain.AssetID {
 			return errors.New("asset ID in output is invalid")
@@ -367,12 +350,46 @@ func CheckTransactionOutput(blockHeight uint32, txn *Transaction) error {
 			return errors.New("Invalide transaction UTXO output.")
 		}
 
+		// check if output address is valid
 		if err := DefaultLedger.HeightVersions.CheckOutputProgramHash(blockHeight, txn, output.ProgramHash); err != nil {
 			return err
 		}
 
-		if err := DefaultLedger.HeightVersions.CheckOutputPayload(blockHeight, txn, output); err != nil {
-			return err
+		if contract.GetPrefixType(output.ProgramHash) == contract.PrefixDeposit && output.OutputType != RegisterProducerOutput {
+			return errors.New("only RegisterProducer transaction can transfer to the deposit address")
+		}
+
+		if txn.Version >= TxVersion09 {
+			// vote information can only be placed in TransferAsset transaction.
+			if txn.TxType == TransferAsset {
+				switch output.OutputType {
+				case DefaultOutput:
+				case VoteOutput:
+				case RegisterProducerOutput:
+				default:
+					return errors.New("transaction type TransferAsset dose not match the output payload type")
+				}
+			} else {
+				switch output.OutputType {
+				case DefaultOutput:
+				default:
+					return errors.New("transaction type dose not match the output payload type")
+				}
+			}
+			return CheckOutputPayloadSanity(output)
+		}
+	}
+
+	return nil
+}
+
+func CheckTransactionOutputContext(txn *Transaction) error {
+	for _, output := range txn.Outputs {
+		// common check
+
+		// output payload check
+		if txn.Version >= TxVersion09 {
+			return CheckOutputPayloadContext(output)
 		}
 	}
 
@@ -669,80 +686,6 @@ func CheckTransferCrossChainAssetTransaction(txn *Transaction, references map[*I
 	if totalInput-totalOutput < common.Fixed64(config.Parameters.MinCrossChainTxFee) {
 		return errors.New("Invalid transaction fee")
 	}
-	return nil
-}
-
-func CheckRegisterProducerTransaction(txn *Transaction) error {
-	payload, ok := txn.Payload.(*PayloadRegisterProducer)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	height, err := DefaultLedger.Store.GetCancelProducerHeight(payload.PublicKey)
-	if err == nil {
-		return fmt.Errorf("invalid producer, canceled at height: %d", height)
-	}
-
-	// check public key and nick name
-	producers := DefaultLedger.Store.GetRegisteredProducers()
-	hash, err := contract.PublicKeyToDepositProgramHash(payload.PublicKey)
-	if err != nil {
-		return errors.New("invalid public key")
-	}
-	if err := checkStringField(payload.NickName, "NickName"); err != nil {
-		return err
-	}
-	for _, p := range producers {
-		if bytes.Equal(p.PublicKey, payload.PublicKey) {
-			return errors.New("duplicated public key")
-		}
-		if p.NickName == payload.NickName {
-			return errors.New("duplicated nick name")
-		}
-	}
-
-	// check url
-	if err = checkStringField(payload.Url, "Url"); err != nil {
-		return err
-	}
-
-	// check ip
-	if err = checkStringField(payload.Address, "IP"); err != nil {
-		return err
-	}
-
-	// check signature
-	publicKey, err := DecodePoint(payload.PublicKey)
-	if err != nil {
-		return errors.New("invalid public key in payload")
-	}
-	signedBuf := new(bytes.Buffer)
-	err = payload.SerializeUnsigned(signedBuf, PayloadRegisterProducerVersion)
-	if err != nil {
-		return err
-	}
-	err = Verify(*publicKey, signedBuf.Bytes(), payload.Signature)
-	if err != nil {
-		return errors.New("invalid signature in payload")
-	}
-
-	// check the deposit coin
-	var depositCount int
-	for _, output := range txn.Outputs {
-		if contract.GetPrefixType(output.ProgramHash) == contract.PrefixDeposit {
-			depositCount++
-			if !output.ProgramHash.IsEqual(*hash) {
-				return errors.New("deposit address does not match the public key in payload")
-			}
-			if output.Value < MinDepositAmount {
-				return errors.New("producer deposit amount is insufficient")
-			}
-		}
-	}
-	if depositCount != 1 {
-		return errors.New("there must be only one deposit address in outputs")
-	}
-
 	return nil
 }
 
@@ -1072,12 +1015,4 @@ func getConfirmSigners(confirm *DPosProposalVoteSlot) map[string]interface{} {
 		result[v.Signer] = nil
 	}
 	return result
-}
-
-func checkStringField(rawStr string, field string) error {
-	if len(rawStr) == 0 || len(rawStr) > MaxStringLength {
-		return fmt.Errorf("Field %s has invalid string length.", field)
-	}
-
-	return nil
 }

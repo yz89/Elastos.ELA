@@ -9,8 +9,6 @@ import (
 	"github.com/elastos/Elastos.ELA/crypto"
 )
 
-const PayloadRegisterProducerVersion byte = 0x00
-
 type RegisterProducer struct {
 	PublicKey []byte
 	NickName  string
@@ -20,21 +18,21 @@ type RegisterProducer struct {
 	Signature []byte
 }
 
-func (a *RegisterProducer) Data() []byte {
+func (rp *RegisterProducer) Data() []byte {
 	buf := new(bytes.Buffer)
-	if err := a.Serialize(buf); err != nil {
+	if err := rp.Serialize(buf); err != nil {
 		return []byte{0}
 	}
 	return buf.Bytes()
 }
 
-func (a *RegisterProducer) Serialize(w io.Writer) error {
-	err := a.SerializeUnsigned(w)
+func (rp *RegisterProducer) Serialize(w io.Writer) error {
+	err := rp.SerializeUnsigned(w)
 	if err != nil {
 		return err
 	}
 
-	err = common.WriteVarBytes(w, a.Signature)
+	err = common.WriteVarBytes(w, rp.Signature)
 	if err != nil {
 		return errors.New("[RegisterProducer], Signature serialize failed")
 	}
@@ -42,36 +40,36 @@ func (a *RegisterProducer) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (a *RegisterProducer) SerializeUnsigned(w io.Writer) error {
-	err := common.WriteVarBytes(w, a.PublicKey)
+func (rp *RegisterProducer) SerializeUnsigned(w io.Writer) error {
+	err := common.WriteVarBytes(w, rp.PublicKey)
 	if err != nil {
 		return errors.New("[RegisterProducer], PublicKey serialize failed")
 	}
 
-	err = common.WriteVarString(w, a.NickName)
+	err = common.WriteVarString(w, rp.NickName)
 	if err != nil {
 		return errors.New("[RegisterProducer], NickName serialize failed")
 	}
 
-	err = common.WriteVarString(w, a.Url)
+	err = common.WriteVarString(w, rp.Url)
 	if err != nil {
 		return errors.New("[RegisterProducer], Url serialize failed")
 	}
 
-	err = common.WriteUint64(w, a.Location)
+	err = common.WriteUint64(w, rp.Location)
 	if err != nil {
 		return errors.New("[RegisterProducer], Location serialize failed")
 	}
 
-	err = common.WriteVarString(w, a.Address)
+	err = common.WriteVarString(w, rp.Address)
 	if err != nil {
 		return errors.New("[RegisterProducer], Address serialize failed")
 	}
 	return nil
 }
 
-func (a *RegisterProducer) Deserialize(r io.Reader) error {
-	err := a.DeserializeUnsigned(r)
+func (rp *RegisterProducer) Deserialize(r io.Reader) error {
+	err := rp.DeserializeUnsigned(r)
 	if err != nil {
 		return err
 	}
@@ -80,12 +78,12 @@ func (a *RegisterProducer) Deserialize(r io.Reader) error {
 		return errors.New("[RegisterProducer], Signature deserialize failed")
 	}
 
-	a.Signature = sig
+	rp.Signature = sig
 
 	return nil
 }
 
-func (a *RegisterProducer) DeserializeUnsigned(r io.Reader) error {
+func (rp *RegisterProducer) DeserializeUnsigned(r io.Reader) error {
 	publicKey, err := common.ReadVarBytes(r, crypto.NegativeBigLength, "public key")
 	if err != nil {
 		return errors.New("[RegisterProducer], PublicKey deserialize failed")
@@ -111,19 +109,15 @@ func (a *RegisterProducer) DeserializeUnsigned(r io.Reader) error {
 		return errors.New("[RegisterProducer], Address deserialize failed")
 	}
 
-	a.PublicKey = publicKey
-	a.NickName = nickName
-	a.Url = url
-	a.Location = location
-	a.Address = addr
+	rp.PublicKey = publicKey
+	rp.NickName = nickName
+	rp.Url = url
+	rp.Location = location
+	rp.Address = addr
 
 	return nil
 }
 
-func (a *RegisterProducer) GetVersion() byte {
+func (rp *RegisterProducer) GetVersion() byte {
 	return 0
-}
-
-func (a *RegisterProducer) Validate() error {
-	return nil
 }

@@ -15,10 +15,6 @@ func (v *TxVersionV0) GetVersion() byte {
 	return 0
 }
 
-func (v *TxVersionV0) CheckOutputPayload(txType types.TransactionType, output *types.Output) error {
-	return nil
-}
-
 func (v *TxVersionV0) CheckOutputProgramHash(programHash Uint168) error {
 	return nil
 }

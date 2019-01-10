@@ -23,6 +23,7 @@ const (
 	ErrUTXOLocked             ErrCode = 45019
 	ErrSideChainPowConsensus  ErrCode = 45020
 	ErrReturnDepositConsensus ErrCode = 45021
+	ErrInvalidOutputPayload   ErrCode = 45022
 
 	SessionExpired       ErrCode = 41001
 	IllegalDataFormat    ErrCode = 41003

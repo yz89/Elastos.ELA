@@ -9,7 +9,6 @@ type HeightVersions interface {
 	GetDefaultTxVersion(blockHeight uint32) byte
 	GetDefaultBlockVersion(blockHeight uint32) uint32
 
-	CheckOutputPayload(blockHeight uint32, tx *types.Transaction, output *types.Output) error
 	CheckOutputProgramHash(blockHeight uint32, tx *types.Transaction, programHash common.Uint168) error
 	CheckCoinbaseMinerReward(blockHeight uint32, tx *types.Transaction, totalReward common.Fixed64) error
 	CheckCoinbaseArbitratorsReward(blockHeight uint32, coinbase *types.Transaction, rewardInCoinbase common.Fixed64) error

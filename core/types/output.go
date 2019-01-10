@@ -23,7 +23,6 @@ type OutputPayload interface {
 	Serialize(w io.Writer) error
 	Deserialize(r io.Reader) error
 	GetVersion() byte
-	Validate() error
 }
 
 type Output struct {

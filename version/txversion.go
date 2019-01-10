@@ -15,7 +15,6 @@ import (
 type TxVersion interface {
 	GetVersion() byte
 
-	CheckOutputPayload(txType types.TransactionType, output *types.Output) error
 	CheckOutputProgramHash(programHash common.Uint168) error
 	CheckCoinbaseMinerReward(tx *types.Transaction, totalReward common.Fixed64) error
 	CheckCoinbaseArbitratorsReward(coinbase *types.Transaction, rewardInCoinbase common.Fixed64) error
@@ -28,34 +27,6 @@ type TxVersionMain struct {
 
 func (v *TxVersionMain) GetVersion() byte {
 	return 9
-}
-
-func (v *TxVersionMain) CheckOutputPayload(txType types.TransactionType, output *types.Output) error {
-	// Vote information can only be placed in TransferAsset transaction.
-	if txType == types.TransferAsset {
-		switch output.OutputType {
-		case types.DefaultOutput:
-		case types.VoteOutput:
-		case types.RegisterProducerOutput:
-		default:
-			goto ERRMATCH
-		}
-	} else {
-		switch output.OutputType {
-		case types.DefaultOutput:
-		default:
-			goto ERRMATCH
-		}
-	}
-
-	if err := output.OutputPayload.Validate(); err != nil {
-		return err
-	} else {
-		return nil
-	}
-
-ERRMATCH:
-	return errors.New("transaction type dose not match the output payload type")
 }
 
 func (v *TxVersionMain) CheckOutputProgramHash(programHash common.Uint168) error {

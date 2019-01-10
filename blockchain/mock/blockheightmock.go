@@ -36,10 +36,6 @@ func (b *BlockHeightMock) GetDefaultBlockVersion(blockHeight uint32) uint32 {
 	return b.DefaultBlockVersion
 }
 
-func (b *BlockHeightMock) CheckOutputPayload(blockHeight uint32, tx *types.Transaction, output *types.Output) error {
-	return nil
-}
-
 func (b *BlockHeightMock) CheckOutputProgramHash(blockHeight uint32, tx *types.Transaction, programHash common.Uint168) error {
 	return nil
 }

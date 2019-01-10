@@ -1,16 +1,11 @@
 package outputpayload
 
 import (
-	"errors"
 	"fmt"
 	"io"
 
 	"github.com/elastos/Elastos.ELA/common"
 	"github.com/elastos/Elastos.ELA/crypto"
-)
-
-const (
-	MaxVoteProducersPerTransaction = 50
 )
 
 const (
@@ -80,31 +75,31 @@ type VoteOutput struct {
 	Contents []VoteContent
 }
 
-func (o *VoteOutput) Data() []byte {
+func (vo *VoteOutput) Data() []byte {
 	return nil
 }
 
-func (o *VoteOutput) Serialize(w io.Writer) error {
-	if _, err := w.Write([]byte{byte(o.Version)}); err != nil {
+func (vo *VoteOutput) Serialize(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(vo.Version)}); err != nil {
 		return err
 	}
-	if err := common.WriteVarUint(w, uint64(len(o.Contents))); err != nil {
+	if err := common.WriteVarUint(w, uint64(len(vo.Contents))); err != nil {
 		return err
 	}
-	for _, content := range o.Contents {
-		if err := content.Serialize(w, o.Version); err != nil {
+	for _, content := range vo.Contents {
+		if err := content.Serialize(w, vo.Version); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (o *VoteOutput) Deserialize(r io.Reader) error {
+func (vo *VoteOutput) Deserialize(r io.Reader) error {
 	version, err := common.ReadBytes(r, 1)
 	if err != nil {
 		return err
 	}
-	o.Version = version[0]
+	vo.Version = version[0]
 
 	contentsCount, err := common.ReadVarUint(r, 0)
 	if err != nil {
@@ -113,54 +108,21 @@ func (o *VoteOutput) Deserialize(r io.Reader) error {
 
 	for i := uint64(0); i < contentsCount; i++ {
 		var content VoteContent
-		if err := content.Deserialize(r, o.Version); err != nil {
+		if err := content.Deserialize(r, vo.Version); err != nil {
 			return err
 		}
-		o.Contents = append(o.Contents, content)
+		vo.Contents = append(vo.Contents, content)
 	}
 
 	return nil
 }
 
-func (o *VoteOutput) GetVersion() byte {
-	return o.Version
+func (vo *VoteOutput) GetVersion() byte {
+	return vo.Version
 }
 
-func (o *VoteOutput) Validate() error {
-	if o == nil {
-		return errors.New("vote output payload is nil")
-	}
-
-	typeMap := make(map[VoteType]struct{})
-	for _, content := range o.Contents {
-		if _, exists := typeMap[content.VoteType]; exists {
-			return errors.New("duplicate vote type")
-		}
-		typeMap[content.VoteType] = struct{}{}
-
-		if len(content.Candidates) == 0 || len(content.Candidates) > MaxVoteProducersPerTransaction {
-			return errors.New("invalid public key count")
-		}
-		// only use Delegate as a vote type for now
-		if content.VoteType != Delegate {
-			return errors.New("invalid vote type")
-		}
-
-		candidateMap := make(map[string]struct{})
-		for _, candidate := range content.Candidates {
-			c := common.BytesToHexString(candidate)
-			if _, exists := candidateMap[c]; exists {
-				return errors.New("duplicate candidate")
-			}
-			candidateMap[c] = struct{}{}
-		}
-	}
-
-	return nil
-}
-
-func (o VoteOutput) String() string {
+func (vo VoteOutput) String() string {
 	return fmt.Sprint("Vote: {",
-		"Version: ", o.Version, " ",
-		"Contents: ", o.Contents, "\n\t}")
+		"Version: ", vo.Version, " ",
+		"Contents: ", vo.Contents, "\n\t}")
 }

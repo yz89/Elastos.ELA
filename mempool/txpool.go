@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/elastos/Elastos.ELA/core/types/outputpayload"
 	"sync"
 
 	"github.com/elastos/Elastos.ELA/blockchain"
@@ -216,16 +217,26 @@ func (pool *TxPool) verifyTransactionWithTxnPool(txn *Transaction) ErrCode {
 			log.Warn(err)
 			return ErrSidechainTxDuplicate
 		}
-	} else if txn.IsRegisterProducerTx() {
-		payload, ok := txn.Payload.(*PayloadRegisterProducer)
-		if !ok {
-			log.Error("register producer payload cast failed, tx:", txn.Hash())
+	}
+
+	for _, output := range txn.Outputs {
+		var publicKey []byte
+		switch output.OutputType {
+		case RegisterProducerOutput:
+			payload, ok := output.OutputPayload.(*outputpayload.RegisterProducer)
+			if !ok {
+				return ErrInvalidOutputPayload
+			}
+			publicKey = payload.PublicKey
 		}
-		if err := pool.verifyDuplicateProducer(BytesToHexString(payload.PublicKey)); err != nil {
+
+		if err := pool.verifyDuplicateProducer(BytesToHexString(publicKey)); err != nil {
 			log.Warn(err)
 			return ErrProducerProcessing
 		}
-	} else if txn.IsUpdateProducerTx() {
+	}
+
+	if txn.IsUpdateProducerTx() {
 		payload, ok := txn.Payload.(*PayloadUpdateProducer)
 		if !ok {
 			log.Error("update producer payload cast failed, tx:", txn.Hash())

@@ -7,22 +7,18 @@ import (
 type DefaultOutput struct {
 }
 
-func (o *DefaultOutput) Data() []byte {
+func (do *DefaultOutput) Data() []byte {
 	return nil
 }
 
-func (o *DefaultOutput) Serialize(w io.Writer) error {
+func (do *DefaultOutput) Serialize(w io.Writer) error {
 	return nil
 }
 
-func (o *DefaultOutput) Deserialize(r io.Reader) error {
+func (do *DefaultOutput) Deserialize(r io.Reader) error {
 	return nil
 }
 
-func (o *DefaultOutput) GetVersion() byte {
+func (do *DefaultOutput) GetVersion() byte {
 	return 0
-}
-
-func (o *DefaultOutput) Validate() error {
-	return nil
 }

@@ -15,10 +15,6 @@ func (v *TxVersionV1) GetVersion() byte {
 	return 1
 }
 
-func (v *TxVersionV1) CheckOutputPayload(txType types.TransactionType, output *types.Output) error {
-	return nil
-}
-
 func (v *TxVersionV1) CheckCoinbaseMinerReward(tx *types.Transaction, totalReward Fixed64) error {
 	return nil
 }
