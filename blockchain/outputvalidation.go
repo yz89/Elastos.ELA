@@ -36,6 +36,7 @@ func CheckOutputPayloadSanity(o *types.Output) error {
 	case types.CancelProducerOutput:
 		return CheckOutputCancelProducerSanity(o)
 	case types.ReturnProducerOutput:
+		return CheckOutputReturnProducerSanity(o)
 	default:
 		return errors.New("invalid output type")
 	}
@@ -43,7 +44,7 @@ func CheckOutputPayloadSanity(o *types.Output) error {
 	return nil
 }
 
-func CheckOutputPayloadContext(o *types.Output) error {
+func CheckOutputPayloadContext(txn *types.Transaction, o *types.Output) error {
 	// common check
 
 	// output payload check
@@ -58,6 +59,7 @@ func CheckOutputPayloadContext(o *types.Output) error {
 	case types.CancelProducerOutput:
 		return CheckOutputCancelProducerContext(o)
 	case types.ReturnProducerOutput:
+		return CheckOutputReturnProducerContext(txn, o)
 	default:
 		return errors.New("invalid output type")
 	}
@@ -293,12 +295,19 @@ func CheckOutputCancelProducerContext(o *types.Output) error {
 
 // check return producer payload
 func CheckOutputReturnProducerSanity(o *types.Output) error {
-
 	return nil
 }
 
-func CheckOutputReturnProducerContext(o *types.Output) error {
-
+func CheckOutputReturnProducerContext(txn *types.Transaction, o *types.Output) error {
+	for _, program := range txn.Programs {
+		cancelHeight, err := DefaultLedger.Store.GetCancelProducerHeight(program.Code[1 : len(program.Code)-1])
+		if err != nil {
+			return errors.New("no cancel sign found on this public key")
+		}
+		if DefaultLedger.Store.GetHeight()-cancelHeight < DepositLockupBlocks {
+			return errors.New("the deposit does not meet the lockup limit")
+		}
+	}
 	return nil
 }
 

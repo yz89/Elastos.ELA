@@ -106,13 +106,6 @@ func CheckTransactionContext(blockHeight uint32, txn *Transaction) ErrCode {
 		}
 	}
 
-	if txn.IsReturnDepositCoin() {
-		if err := CheckReturnDepositCoinTransaction(txn); err != nil {
-			log.Warn("[CheckReturnDepositCoinTransaction],", err)
-			return ErrReturnDepositConsensus
-		}
-	}
-
 	// check double spent transaction
 	if DefaultLedger.IsDoubleSpend(txn) {
 		log.Warn("[CheckTransactionContext] IsDoubleSpend check faild.")
@@ -375,7 +368,7 @@ func CheckTransactionOutputContext(txn *Transaction) error {
 
 		// output payload check
 		if txn.Version >= TxVersion09 {
-			return CheckOutputPayloadContext(output)
+			return CheckOutputPayloadContext(txn, output)
 		}
 	}
 
@@ -671,19 +664,6 @@ func CheckTransferCrossChainAssetTransaction(txn *Transaction, references map[*I
 
 	if totalInput-totalOutput < common.Fixed64(config.Parameters.MinCrossChainTxFee) {
 		return errors.New("Invalid transaction fee")
-	}
-	return nil
-}
-
-func CheckReturnDepositCoinTransaction(txn *Transaction) error {
-	for _, program := range txn.Programs {
-		cancelHeight, err := DefaultLedger.Store.GetCancelProducerHeight(program.Code[1 : len(program.Code)-1])
-		if err != nil {
-			return errors.New("no cancel sign found on this public key")
-		}
-		if DefaultLedger.Store.GetHeight()-cancelHeight < DepositLockupBlocks {
-			return errors.New("the deposit does not meet the lockup limit")
-		}
 	}
 	return nil
 }
