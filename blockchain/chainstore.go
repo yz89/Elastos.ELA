@@ -42,6 +42,8 @@ type ChainStore struct {
 	mtx              sync.RWMutex
 	blockHashesCache []Uint256
 	blocksCache      map[Uint256]*Block
+
+	persistMutex sync.Mutex
 }
 
 func NewChainStore(dataDir string, genesisBlock *Block, fflDB IFFLDBChainStore) (
@@ -66,11 +68,13 @@ func NewChainStore(dataDir string, genesisBlock *Block, fflDB IFFLDBChainStore) 
 }
 
 func (c *ChainStore) Close() {
-	if err := c.IStore.Close(); err != nil {
-		log.Info("IStore close failed:", err)
-	}
+	c.persistMutex.Lock()
+	defer c.persistMutex.Unlock()
 	if err := c.fflDB.Close(); err != nil {
-		log.Info("fflDB close failed:", err)
+		log.Error("fflDB close failed:", err)
+	}
+	if err := c.IStore.Close(); err != nil {
+		log.Error("IStore close failed:", err)
 	}
 }
 
@@ -497,6 +501,9 @@ func (c *ChainStore) rollback(b *Block, node *BlockNode,
 
 func (c *ChainStore) persist(b *Block, node *BlockNode,
 	confirm *payload.Confirm, medianTimePast time.Time) error {
+	c.persistMutex.Lock()
+	defer c.persistMutex.Unlock()
+
 	c.NewBatch()
 	if err := c.PersistTransactions(b); err != nil {
 		return err
