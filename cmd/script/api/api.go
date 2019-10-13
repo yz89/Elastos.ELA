@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2019 The Elastos Foundation
 // Use of this source code is governed by an MIT
 // license that can be found in the LICENSE file.
-// 
+//
 
 package api
 
@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/elastos/Elastos.ELA/blockchain/indexers"
 	"os"
 	"path/filepath"
 	"strings"
@@ -173,7 +174,17 @@ func initLedger(L *lua.LState) int {
 	dlog.Init(logLevel, 0, 0)
 
 	ledger := blockchain.Ledger{}
-	chainStore, err := blockchain.NewChainStore(test.DataPath, chainParams.GenesisBlock)
+	fflDB, err := blockchain.LoadBlockDB(test.DataPath)
+	if err != nil {
+		fmt.Printf("load block db error: %s \n", err.Error())
+	}
+	indexManager := indexers.NewManager(fflDB)
+	fflDBChainStore, err := blockchain.NewChainStoreFFLDB(fflDB, indexManager)
+	if err != nil {
+		fmt.Printf("Init ffldb chain store error: %s \n", err.Error())
+	}
+	chainStore, err := blockchain.NewChainStore(test.DataPath, chainParams.GenesisBlock,
+		fflDBChainStore)
 	if err != nil {
 		fmt.Printf("Init chain store error: %s \n", err.Error())
 	}
